@@ -1,5 +1,5 @@
 
-USING: io memoize macros math namespaces kernel lists lists.lazy sequences ;
+USING: io memoize macros math namespaces kernel lists lists.lazy sequences fry ;
 
 IN: first
 
@@ -27,7 +27,7 @@ MEMO: test ( a  -- bool ) 4 = ;
 : sfilter ( number list operation -- filtered number )
     ! For some reason compiled call's have to do this
     ! number operation number operation car -> number operation number car operation
-    swap [ [ 2dup ] dip swap call ] filter swap drop swap ; inline
+    swap [ [ 2dup ] dip swap call( x x -- x ) ] filter swap drop swap ; inline
 
 : on-car ( x quote  -- ? )
     [ car ] dip  call( x --  ? ) ;
@@ -67,20 +67,22 @@ PRIVATE>
 : quicksort ( xs -- xs )
     [ { } ]
     [ [ first ] keep swap
-      [ [ < ] curry filter quicksort ]
-      [ [ = ] curry filter ]
-      [ [ > ] curry filter quicksort ] 2tri
+      [ '[ _ < ] filter quicksort ]
+      [ '[ _ = ] filter ]
+      [ '[ _ > ] filter quicksort ] 2tri
       append append ]
     if-empty ;
 
+! these are the same!
+! [ [ = ] curry lfilter ]
 
 : list.quicksort ( xs -- xs )
     dup nil?
     [  ]
     [ [ car ] keep swap
-      [ [ < ] curry lfilter list.quicksort ]
-      [ [ = ] curry lfilter ]
-      [ [ > ] curry lfilter list.quicksort ] 2tri
+      [ '[ _ < ] lfilter list.quicksort ]
+      [ '[ _ = ] lfilter ]
+      [ '[ _ > ] lfilter list.quicksort ] 2tri
       lappend-lazy lappend-lazy ]
     if ;
 
