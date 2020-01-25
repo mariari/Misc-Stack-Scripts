@@ -25,12 +25,18 @@ MEMO: test ( a  -- bool ) 4 = ;
 
 ! operation
 : sfilter ( number list operation -- filtered number )
-    ! for some reason compiled call's have to do this
+    ! For some reason compiled call's have to do this
     ! number operation number operation car -> number operation number car operation
-    swap [ [ 2dup ] dip swap call( x x -- x ) ] filter swap drop swap ;
+    swap [ [ 2dup ] dip swap call ] filter swap drop swap ; inline
 
 : on-car ( x quote  -- ? )
     [ car ] dip  call( x --  ? ) ;
+
+! if we don't inline we have to say call( x -- ? )
+! in fact if we use the above form, the output is much less optimized
+! swap [ car swap call( x -- ? ) ] keep cons ;
+: run-on-car ( x quote  -- ? )
+    [ dup car ] dip call swap cons ; inline
 
 PRIVATE>
 
