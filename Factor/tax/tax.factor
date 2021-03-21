@@ -36,3 +36,23 @@ PRIVATE>
 
 : income-after-taxes ( conversion income -- left )
     [ proper ] keep swap - ;
+
+: health-care ( income -- cost )
+    0.0517 * ;
+
+: calculate-expesnses ( rent income-per-month -- left-each-month )
+    12 *                    ! make it early for tax costs
+    dup
+    [ 0.035 swap proper - ] ! taxes
+    [ 0.10  * - ]           ! savings
+    [ health-care - ]       ! public healthcare costs
+    tri
+    12 /                    ! per month
+    swap -                  ! rent
+    2 15 30 * * -           ! food
+    2 30      * -           ! train tickets
+    [ 250                   ! private health insurance
+      70                    ! electricity
+      25                    ! internet
+      25                    ! cell
+    ] [ - ] each ;
