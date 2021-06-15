@@ -20,14 +20,13 @@ IN: tax
 
 : bracket-range ( sequence -- n ) first2 swap - ;
 
-: bracket-call ( tax salary table -- tax salary )
+: bracket-call ( tax salary table -- tax salary-left )
     [ [ bracket-range min ] keep third * + ] ! setup tax information
     [ bracket-range [-] ]                    ! setup salary left
     2bi ;
 
-! TODO ∷ improve
 : convert-currency-for ( conversion money op -- money )
-    [ swap [ / ] keep swap ] dip call( a -- a ) * ;
+    [ over / ] dip call( a -- a ) * ;
 
 PRIVATE>
 
@@ -40,7 +39,7 @@ PRIVATE>
 : health-care ( income -- cost )
     0.0517 * ;
 
-: calculate-expesnses ( rent income-per-month -- left-each-month )
+: calculate-expenses ( rent income-per-month -- left-each-month )
     12 *                    ! make it early for tax costs
     dup
     [ 0.035 swap proper - ] ! taxes
