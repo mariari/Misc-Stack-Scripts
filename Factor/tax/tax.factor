@@ -3,8 +3,10 @@
 USING: kernel math sequences math.order ;
 IN: tax
 
-: percent (  taxes-paid income -- percent )
-    [ swap - ] keep / 1 swap - ;
+: percent ( taxes-paid income -- percent ) / ;
+
+! a complicated way to say /
+! [ swap - ] keep / 1 swap - ;
 
 : simple ( tax income -- final ) * ;
 
@@ -39,14 +41,16 @@ PRIVATE>
 : health-care ( income -- cost )
     0.0517 * ;
 
+: calculate-yearly ( monthly-value operation -- monthly-return )
+    [ 12 * ] dip call( a -- a ) 12 / ;
+
 : calculate-expenses ( rent income-per-month -- left-each-month )
-    12 *                    ! make it early for tax costs
-    dup
-    [ 0.035 swap proper - ] ! taxes
-    [ 0.10  * - ]           ! savings
-    [ health-care - ]       ! public healthcare costs
-    tri
-    12 /                    ! per month
+    [ dup
+      [ 0.035 swap proper - ] ! taxes
+      [ 0.10  * - ]           ! savings
+      [ health-care - ]       ! public healthcare costs
+      tri
+    ] calculate-yearly
     swap -                  ! rent
     2 15 30 * * -           ! food
     2 30      * -           ! train tickets
