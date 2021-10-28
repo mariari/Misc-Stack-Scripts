@@ -22,9 +22,9 @@ IN: tax
 
 : bracket-range ( sequence -- n ) first2 swap - ;
 
-: bracket-call ( tax salary table -- tax salary-left )
-    [ [ bracket-range min ] keep third * + ] ! setup tax information
-    [ bracket-range [-] ]                    ! setup salary left
+: tax-paid-in-bracket ( salary table -- untaxed-salary-left tax )
+    [ bracket-range [-] ]                  ! setup salary left
+    [ [ bracket-range min ] keep third * ] ! setup tax information
     2bi ;
 
 : convert-currency-for ( conversion money op -- money )
@@ -32,8 +32,11 @@ IN: tax
 
 PRIVATE>
 
+: proper-ntd ( income -- taxes-paid )
+    taiwan-table [ tax-paid-in-bracket ] map-sum nip ;
+
 : proper ( conversion income -- taxes-paid )
-    [ 0 swap taiwan-table [ bracket-call ] each drop ] convert-currency-for ;
+    [ proper-ntd ] convert-currency-for ;
 
 : income-after-taxes ( conversion income -- left )
     [ proper ] keep swap - ;
