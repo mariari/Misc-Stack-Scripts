@@ -1,6 +1,6 @@
 ! Copyright (C) 2021 .
 ! See http://factorcode.org/license.txt for BSD license.
-USING: kernel math sequences math.order ;
+USING: kernel math sequences math.order literals ;
 IN: tax
 
 : percent ( taxes-paid income -- percent ) / ;
@@ -51,11 +51,11 @@ PRIVATE>
       [ health-care - ]       ! public healthcare costs
       tri
     ] calculate-yearly
-    swap -                  ! rent
-    2 15 30 * * -           ! food
-    2 30      * -           ! train tickets
-    [ 250                   ! private health insurance
-      70                    ! electricity
-      25                    ! internet
-      25                    ! cell
-    ] [ - ] each ;
+    swap -                   ! rent
+    ${ 2 30    *             ! train tickets
+       2 15 30 * *           ! food
+       250                   ! private health insurance
+       70                    ! electricity
+       25                    ! internet
+       25                    ! cell
+    } [ - ] each ;
