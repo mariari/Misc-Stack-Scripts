@@ -1,6 +1,7 @@
 ! Copyright (C) 2021 .
 ! See http://factorcode.org/license.txt for BSD license.
 USING: kernel math sequences math.order literals ;
+QUALIFIED-WITH: namespaces name
 IN: tax
 
 : percent ( taxes-paid income -- percent ) / ;
@@ -9,6 +10,25 @@ IN: tax
 ! [ swap - ] keep / 1 swap - ;
 
 : simple ( tax income -- final ) * ;
+
+! ------------------------------------------------------------------
+! Conversion rate is stored as a global variable as it is simpler to
+! reason about when it is fixed, yet moldable
+! ------------------------------------------------------------------
+
+"conversion" [ 0.035 ] name:initialize
+
+: conversion-rate ( -- rate )
+    "conversion" name:get-global ;
+
+: set-ntd-to-usd ( new-rate -- )
+    "conversion" name:set-global ;
+
+: usd-to-ntd ( money -- money )
+    conversion-rate / ;
+
+: ntd-to-usd ( money -- money )
+    conversion-rate * ;
 
 <PRIVATE
 
@@ -27,19 +47,19 @@ IN: tax
     [ [ bracket-range min ] keep third * ] ! setup tax information
     2bi ;
 
-: convert-currency-for ( conversion money op -- money )
-    [ over / ] dip call( a -- a ) * ;
+: with-usd-to-ntd ( money op -- money )
+    [ usd-to-ntd ] dip call( a -- a ) ntd-to-usd ;
 
 PRIVATE>
 
-: proper-ntd ( income -- taxes-paid )
+: taxes-owed-ntd ( income -- taxes-paid )
     taiwan-table [ tax-paid-in-bracket ] map-sum nip ;
 
-: proper ( conversion income -- taxes-paid )
-    [ proper-ntd ] convert-currency-for ;
+: taxes-owed ( income-usd -- taxes-paid-usd )
+    [ taxes-owed-ntd ] with-usd-to-ntd ;
 
-: income-after-taxes ( conversion income -- left )
-    [ proper ] keep swap - ;
+: income-after-taxes ( income -- left )
+    [ taxes-owed ] keep swap - ;
 
 : health-care ( income -- cost )
     0.0517 * ;
@@ -49,9 +69,9 @@ PRIVATE>
 
 : calculate-expenses ( rent income-per-month -- left-each-month )
     [ dup
-      [ 0.035 swap proper - ] ! taxes
-      [ 0.10  * - ]           ! savings
-      [ health-care - ]       ! public healthcare costs
+      [ taxes-owed - ]       ! taxes
+      [ 0.10  * - ]          ! savings
+      [ health-care - ]      ! public healthcare costs
       tri
     ] calculate-yearly
     swap -                   ! rent
