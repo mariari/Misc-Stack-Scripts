@@ -1,5 +1,5 @@
 
-USING: io memoize macros math namespaces kernel lists lists.lazy sequences fry ;
+USING: io memoize macros math namespaces kernel lists lists.lazy sequences fry formatting ;
 
 IN: first
 
@@ -88,16 +88,42 @@ PRIVATE>
 
 ! ----------------------------------------------------
 
+: list-filter' ( ... list quot: ( ... elt -- ... ? ) -- ... sub-list )
+    over nil?
+    [ drop ]
+    [ 2dup
+      on-car
+      [ over car rot cdr rot list-filter' cons ]
+      [ [ cdr ] dip list-filter' ]
+      if ]
+    if ;
+
 : list-filter ( ... list quot: ( ... elt -- ... ? ) -- ... sub-list )
     over nil?
     [ drop ]
     [ 2dup
       on-car
+      [ [ [ car ] [ cdr ] bi ] dip list-filter cons ]
       [ [ cdr ] dip list-filter ]
-      [ over car rot cdr rot list-filter cons ]
       if ]
     if ;
+
+
+! : list-filter ( ... list quot: ( ... elt -- ... ? ) -- ... sub-list )
+!     over nil?
+!     [ drop ]
+!     [ [ on-car ]
+!       [ rot
+!         [ [ [ car ] [ cdr ] bi ] dip list-filter cons ]
+!         [ [ cdr ] [ list-filter ] bi* ]
+!         [ [ cdr ] dip list-filter ]
+!         if ]
+!       2bi ]
+!     if ;
 
 ! { 1 2 3 4 5 1 123 123 12 31 231 1 2 3 4 5 1 123 123 12 31 231 1 2 3 4 5 1 123 123 12 31 231 1 2 3 4 5 1 123 123 12 31 231 } [ quicksort ] time
 
 ! { 1 2 3 4 5 1 123 123 12 31 231 1 2 3 4 5 1 123 123 12 31 231 1 2 3 4 5 1 123 123 12 31 231 1 2 3 4 5 1 123 123 12 31 231 } sequence>list [ list.quicksort ] time [ list>array ] time
+
+
+: foo-main ( --  ) 2 3 + "%d" printf nl ;

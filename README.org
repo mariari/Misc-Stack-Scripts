@@ -1,1 +1,7 @@
 * Misc-Stack-Scripts
+This contains many random stack based programs I've created over the
+years.
+** Factor Specific
+- I like to symlink the Factor directory to "factor/work", so that
+  scaffold creates the work for me. Further it prevents factor from
+  failing half way through dumping an image.
