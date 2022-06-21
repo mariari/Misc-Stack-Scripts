@@ -5,8 +5,7 @@ USING: typed kernel alien.syntax math unix.ffi locals
        cpu.x86.assembler.operands
        make
        libc
-       sequences
-    ;
+       sequences ;
 QUALIFIED-WITH: unix.ffi ffi
 QUALIFIED-WITH: alien.c-types c
 
@@ -43,7 +42,6 @@ FUNCTION: c:int mprotect ( c:void* addr, c:size_t len, c:int prot )
       0 RET
     ] { } make ;
 
-
 ! Function type
 
 TYPED: program-ptr ( -- uint-array: c-ptr )
@@ -59,7 +57,7 @@ TYPED: allocate-program ( -- memory: c-ptr )
       0 assert= ]
     bi ;
 
-: invoke-memory-function ( ptr: c-ptr -- result )
+: invoke-memory-function ( ptr: c-ptr -- result: c:int )
     c:int [ ] cdecl alien-indirect ;
 
 : run-program ( -- res )

@@ -23,7 +23,6 @@ int main() {
                       /*filedes=*/-1, /*offset=*/0);
   memcpy(memory, program, kProgramSize);
   int result = mprotect(memory, kProgramSize, PROT_EXEC);
-  assert(kProgramSize == 6 && "mprotect failed");
   assert(result == 0 && "mprotect failed");
   JitFunction function = *(JitFunction*)&memory;
   int return_code = function();
