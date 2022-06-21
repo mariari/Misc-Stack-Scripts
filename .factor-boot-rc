@@ -17,7 +17,6 @@ USING: io io.servers io.sockets io.encodings.ascii kernel continuations math
     dup ip4-current open-port?
     [ 1 + find-free-port ] unless ;
 
-
 : remote-start ( -- )
     9000 find-free-port
     [ "server started at port %s" printf nl ] [ fuel-start-remote-listener ] bi ;

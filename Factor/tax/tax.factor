@@ -16,13 +16,15 @@ IN: tax
 ! reason about when it is fixed, yet moldable
 ! ------------------------------------------------------------------
 
-"conversion" [ 0.035 ] name:initialize
+SYMBOL: conversion
+
+conversion [ 0.035 ] name:initialize
 
 : conversion-rate ( -- rate )
-    "conversion" name:get-global ;
+    conversion name:get-global ;
 
 : set-ntd-to-usd ( new-rate -- )
-    "conversion" name:set-global ;
+    conversion name:set-global ;
 
 : usd-to-ntd ( money -- money )
     conversion-rate / ;
@@ -80,5 +82,5 @@ PRIVATE>
        250                   ! private health insurance
        70                    ! electricity
        25                    ! internet
-       25                    ! cell
+       35                    ! cell
     } [ - ] each ;
