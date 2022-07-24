@@ -18,7 +18,7 @@ IN: tax
 
 SYMBOL: conversion
 
-conversion [ 0.035 ] name:initialize
+conversion [ 0.0335 ] name:initialize
 
 : conversion-rate ( -- rate )
     conversion name:get-global ;
@@ -69,6 +69,16 @@ PRIVATE>
 : calculate-yearly ( monthly-value operation -- monthly-return )
     [ 12 * ] dip call( a -- a ) 12 / ;
 
+: monthly-expenses  ( -- amount-in-usd )
+    29 5 30 * * ntd-to-usd  ! Green tea/ drinks
+    ${ 2 30    *            ! train tickets
+       2 15 30 * *          ! food
+       250                  ! private health insurance
+       70                   ! electricity
+       25                   ! internet
+       35                   ! cell
+    } [ + ] each ;
+
 : calculate-expenses ( rent income-per-month -- left-each-month )
     [ dup
       [ taxes-owed - ]       ! taxes
@@ -77,10 +87,4 @@ PRIVATE>
       tri
     ] calculate-yearly
     swap -                   ! rent
-    ${ 2 30    *             ! train tickets
-       2 15 30 * *           ! food
-       250                   ! private health insurance
-       70                    ! electricity
-       25                    ! internet
-       35                    ! cell
-    } [ - ] each ;
+    monthly-expenses - ;
