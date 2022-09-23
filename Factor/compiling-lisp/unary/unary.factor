@@ -9,7 +9,6 @@ USING: typed kernel alien.syntax math unix.ffi locals
 QUALIFIED-WITH: unix.ffi ffi
 QUALIFIED-WITH: alien.c-types c
 
-
 ! Missing Constants
 CONSTANT: MAP_ANONYMOUS 0x20
 CONSTANT: MAP_FIXED     0x10
@@ -29,8 +28,8 @@ FUNCTION: c:int mprotect ( c:void* addr, c:size_t len, c:int prot )
 :: allocate ( size: c:size_t -- memory: c:void* )
     ! f can be used for a null pointer
     base size
-    PROT_READ PROT_WRITE +
-    MAP_PRIVATE MAP_ANONYMOUS +
+    PROT_READ PROT_WRITE bitor
+    MAP_PRIVATE MAP_ANONYMOUS bitor
     -1 0
     mmap ;
 
