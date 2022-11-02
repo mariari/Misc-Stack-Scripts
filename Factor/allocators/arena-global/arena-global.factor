@@ -11,8 +11,9 @@ QUALIFIED-WITH: alien.c-types c
 ! https://www.gingerbill.org/article/2019/02/08/memory-allocation-strategies-002/
 
 ! --------------------------------------------------------------------------------
-! Most Basic Allocator
+! Basic Bad allocator see arena.factor instead of this one
 ! --------------------------------------------------------------------------------
+
 SYMBOL: arena-buffer
 SYMBOL: arena-buffer-length
 SYMBOL: arena-offset

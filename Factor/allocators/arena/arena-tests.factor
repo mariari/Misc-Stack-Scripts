@@ -7,12 +7,16 @@ USING: assocs compiler.tree.debugger kernel tools.test
        namespaces
        accessors
        specialized-arrays.instances.alien.c-types.char
-       allocators.arena
+       allocators.arena allocators.arena.private
     combinators ;
 QUALIFIED-WITH: unix.ffi ffi
 QUALIFIED-WITH: alien.c-types c
 
 IN: allocators.arena.tests
+
+: K ( size: c:ulonglong -- size: c:ulonglong ) 1024 * ;
+: M ( size: c:ulonglong -- size: c:ulonglong ) 1048576 * ;
+: G ( size: c:ulonglong -- size: c:ulonglong ) 1073741824 * ;
 
 
 : test-data ( -- data )
