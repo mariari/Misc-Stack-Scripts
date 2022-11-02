@@ -50,8 +50,12 @@ TYPED: align-forward ( align: fixnum ptr: alien -- aligned-ptr: alien )
 TYPED: offset-from-base ( forward-addr: alien a: arena -- offset-from-base: fixnum )
     buffer>> [ alien-address ] bi@ - ;
 
-: nearest-align ( align arena -- address )
-    current-address align-forward ;
+: nearest-align ( align arena -- address ) current-address align-forward ;
+
+: past-bounds? ( arena offset size -- past? ) + swap buffer-length>> > ;
+
+TYPED: below-bounds? ( a: arena memory: alien -- below? )
+    swap buffer>> [ alien-address ] bi@ < ;
 
 PRIVATE>
 
@@ -62,12 +66,11 @@ TYPED:: alloc-align ( arena: arena size: fixnum align: fixnum -- alien )
     ! Get the relative offset
     align   arena nearest-align    :> new-ptr
     new-ptr arena offset-from-base :> offset
-    offset size + arena buffer-length>> <=
-    ! see if we have memory left
-    [ arena offset >>prev-offset offset size + >>curr-offset drop
-      new-ptr dup 0 size memset
-    ]
+
+    arena offset size past-bounds?
     [ f ]
+    [ arena offset >>prev-offset offset size + >>curr-offset drop
+      new-ptr dup 0 size memset ]
     if ;
 
 TYPED: alloc ( a: arena size: fixnum -- alien )
@@ -78,25 +81,28 @@ TYPED:: resize-align
       -- alien )
     ! compute the old offset from the base
     old-memory a offset-from-base :> old-offset
-
+    a prev-offset>> old-offset =  :> resize-current?
     { { [ old-memory f = old-size zero? or ]
         [ a new-size align alloc-align ] }
-      { [ a buffer>> old-memory [ alien-address ] bi@ >
-          old-offset a buffer-length>> >=
-          or ]
-        [ "memory is out of bounds of the buffer in this arena" throw ] }
-      { [ a prev-offset>> old-offset = ]
+      ! here we check if it's below bounds and if it will be above
+      ! bounds given the latest allocation
+      { [ a
+          [ old-memory below-bounds? ]
+          [ old-offset new-size past-bounds? resize-current? and ]
+          bi or ]
+        [ f ] } ! make error value consistent with the other check
+      { [ resize-current? ]
         [ new-size old-size >
           [ a current-address 0 new-size old-size - memset ] when
-          ! bug in the C. This should come after, as the current
-          ! address up to the new current should be fixed
           new-size old-offset + a curr-offset<<
-
           old-memory ] }
       { [ t ]
-        [ a new-size align alloc-align ! new memory
-          old-memory old-size new-size min memmove ] }
-    } cond ;
+        ! here we let the new memory fail, this can happen if we are
+        ! allocating past the buffers end, either past the align or
+        ! just with current + newsize
+        [ a new-size align alloc-align dup ! new memory
+          [ old-memory old-size new-size min memmove ] [  ] if ] } }
+    cond ;
 
 TYPED: resize ( a: arena old-memory: alien old-size: fixnum new-size: fixnum -- alien )
     default-alignment resize-align ;
