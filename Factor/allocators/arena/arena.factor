@@ -21,6 +21,18 @@ TUPLE: arena
     { prev-offset   fixnum initial: 0 }
     { curr-offset   fixnum initial: 0 } ;
 
+TYPED: <arena> ( data: alien length: fixnum --  arena: arena )
+    0 0 arena boa ;
+
+TUPLE: save-point
+    { arena arena }
+    { prev-offset   fixnum initial: 0 }
+    { curr-offset   fixnum initial: 0 } ;
+
+TYPED: <save-point> ( a: arena -- s: save-point )
+    dup [ prev-offset>> ] [ curr-offset>> ] bi save-point boa ;
+
+
 ! Why do we 2 times the size of void*?
 : default-alignment ( -- fixnum ) c:void* c:heap-size 2 * ;
 
@@ -58,9 +70,6 @@ TYPED: below-bounds? ( a: arena memory: alien -- below? )
     swap buffer>> [ alien-address ] bi@ < ;
 
 PRIVATE>
-
-TYPED: <arena> ( data: alien length: fixnum --  arena: arena )
-    0 0 arena boa ;
 
 TYPED:: alloc-align ( arena: arena size: fixnum align: fixnum -- alien )
     ! Get the relative offset
@@ -104,14 +113,20 @@ TYPED:: resize-align
 TYPED: resize ( a: arena old-memory: alien old-size: fixnum new-size: fixnum -- alien )
     default-alignment resize-align ;
 
-: free ( arena ptr -- ) 2drop ; ! Free does nothing, as we don't rearrange
+: free ( arena ptr -- ) 2drop ;
 
-: free-all ( arena -- ) 0 >>curr-offset 0 >>prev-offset drop ; ! free the structure
+: free-all ( arena -- ) 0 >>curr-offset 0 >>prev-offset drop ;
 
-! backs our memory allocator via a malloc
 : arena-malloc ( size -- arena ) [ malloc ] keep <arena> ;
 
-! frees a malloc backed arena
 : arena-free-malloc ( arena -- ) buffer>> libc:free ;
 
-! we could also back it via a mmap
+! we could also back it via a mmap, but Ι will leave this as an
+! exercise to the reader
+
+ALIAS: snapshot <save-point>
+
+TYPED: restore ( s: save-point -- )
+    dup arena>>
+    [ [ curr-offset>> ] dip curr-offset<< ]
+    [ [ prev-offset>> ] dip prev-offset<< ] 2bi ;
