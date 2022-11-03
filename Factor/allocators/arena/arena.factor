@@ -86,10 +86,7 @@ TYPED:: resize-align
         [ a new-size align alloc-align ] }
       ! here we check if it's below bounds and if it will be above
       ! bounds given the latest allocation
-      { [ a
-          [ old-memory below-bounds? ]
-          [ old-offset new-size past-bounds? resize-current? and ]
-          bi or ]
+      { [ a [ old-memory below-bounds? ] [ old-offset new-size past-bounds? ] bi or ]
         [ f ] } ! make error value consistent with the other check
       { [ resize-current? ]
         [ new-size old-size >
