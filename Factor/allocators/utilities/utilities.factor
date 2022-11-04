@@ -1,10 +1,29 @@
 ! Copyright (C) 2022 mariari.
 ! See http://factorcode.org/license.txt for BSD license.
-USING: kernel math typed syntax alien alien.c-types accessors ;
+USING: kernel math typed syntax alien alien.c-types accessors alien.syntax ;
 IN: allocators.utilities
+
+
+! ------------------------------------------------------------------------------
+! Missing FFI Functions
+! ------------------------------------------------------------------------------
+LIBRARY: libc
+FUNCTION: void* memmove ( void* dst, void* src, size_t size )
+
+! ------------------------------------------------------------------------------
+! Misc functions
+! ------------------------------------------------------------------------------
 
 ! Why do we 2 times the size of void*?
 : default-alignment ( -- alignment ) void* heap-size 2 * ;
+
+: K ( number -- KBs ) 1024 * ;
+: M ( number -- MBs ) 1048576 * ;
+: G ( number -- GBs ) 1073741824 * ;
+
+! ------------------------------------------------------------------------------
+! Power of Two Operations
+! ------------------------------------------------------------------------------
 
 : 2^? ( address -- aligned? )
     dup 1 - bitand zero? ;
@@ -16,9 +35,9 @@ IN: allocators.utilities
 : mod-2^ ( value power -- modded-value )
     1 - bitand ; inline
 
-: K ( number -- KBs ) 1024 * ;
-: M ( number -- MBs ) 1048576 * ;
-: G ( number -- GBs ) 1073741824 * ;
+! ------------------------------------------------------------------------------
+! Dealing with Padding
+! ------------------------------------------------------------------------------
 
 ! 2^ is just an optimized version
 GENERIC: padding-needed    ( align       address -- padding-needed )
@@ -36,6 +55,10 @@ M: alien  padding-needed-2^
 
 : padding-needed-2^-checked ( align-pow-2 address -- padding-needed )
    [ assert-2^ ] dip padding-needed-2^ ;
+
+! ------------------------------------------------------------------------------
+! Dealing with bounds checking
+! ------------------------------------------------------------------------------
 
 MIXIN: bounds
 
@@ -57,6 +80,10 @@ M: bounds below-bounds?
 
 TYPED: within-bounds? ( address: alien b: bounds -- b: boolean )
     [ past-bounds? ] [ below-bounds? ] 2bi or not ;
+
+! ------------------------------------------------------------------------------
+! Dealing with addresses
+! ------------------------------------------------------------------------------
 
 TYPED: +-address ( a: alien f: fixnum -- a+f: alien )
     [ alien-address ] dip + <alien> ;

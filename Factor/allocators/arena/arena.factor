@@ -9,10 +9,6 @@ IN: allocators.arena
 ! Taken from
 ! https://www.gingerbill.org/article/2019/02/08/memory-allocation-strategies-002/
 
-! Missing FFI Functions
-LIBRARY: libc
-FUNCTION: c:void* memmove ( c:void* dst, c:void* src, c:size_t size )
-
 ! ------------------------------------------------------------------------------
 ! Data Type declarations
 ! ------------------------------------------------------------------------------
@@ -91,8 +87,8 @@ TYPED:: resize-align
         ! allocating past the buffers end, either past the align or
         ! just with current + newsize
         [ a new-size align alloc-align dup ! new memory
-          [ old-memory old-size new-size min memmove ] [  ] if ] } }
-    cond ;
+          [ old-memory old-size new-size min memmove ] [  ] if ] }
+    } cond ;
 
 ! ------------------------------------------------------------------------------
 ! Backing the Arena

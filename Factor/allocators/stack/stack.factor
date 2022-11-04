@@ -47,6 +47,15 @@ TYPED: read-header-directly ( address: alien -- h: header )
 ! Read the header given the stack memory allocation address
 TYPED: read-header ( address: alien -- h: header )
     header-offset +-address read-header-directly ;
+
+<PRIVATE
+
+! checks for data that has already been double freed
+TYPED: double-free? ( ptr: alien s: stack -- free?: boolean )
+    current-address [ alien-address ] bi@ >= ;
+
+PRIVATE>
+
 ! ------------------------------------------------------------------------------
 ! Core Logic
 ! ------------------------------------------------------------------------------
@@ -79,14 +88,26 @@ TYPED:: alloc-align ( s: stack size: fixnum align: fixnum -- a: maybe{ alien } )
       next-addr [ 0 size memset ] keep ]
     if ;
 
-TYPED:: free ( s: stack ptr: alien -- )
-    { { [ ptr s within-bounds? not                       ] [ ] } ! can't free OOB
-      { [ ptr s current-address [ alien-address ] bi@ >= ] [ ] } ! allow double free
+DEFER: free
+
+TYPED:: resize-align
+    ( s: stack ptr: alien old-size: fixnum new-size: fixnum align: fixnum
+      -- s: maybe{ alien } )
+    { { [ ptr not        ]           [ f ] }
+      { [ new-size zero? ]           [ s ptr free f ] }
+      { [ ptr s within-bounds? not ] [ f ] } ! Can't resize OOB
+      { [ ptr s double-free?       ] [ f ] }
+      { [ old-size new-size =      ] [ ptr ] }
       { [ t ]
-        ! read the header from memory
-        [ ptr dup read-header padding>> neg +-address s offset-from-base
-          s offset<< ] }
+        [ s new-size align alloc-align dup [ ptr new-size memmove ] [ ] if ] }
     } cond ;
+
+! ------------------------------------------------------------------------------
+! Backing the Arena
+! ------------------------------------------------------------------------------
+
+: stack-malloc ( size -- stack ) [ malloc ] keep <stack> ;
+: stack-free-malloc ( arena -- ) buffer>> libc:free ;
 
 ! ------------------------------------------------------------------------------
 ! Main API
@@ -95,5 +116,14 @@ TYPED:: free ( s: stack ptr: alien -- )
 TYPED: alloc ( s: stack size: fixnum -- a: maybe{ alien } )
     default-alignment alloc-align ;
 
-: stack-malloc ( size -- stack ) [ malloc ] keep <stack> ;
-: stack-free-malloc ( arena -- ) buffer>> libc:free ;
+TYPED: resize ( a: stack ptr: alien old-size: fixnum new-size: fixnum -- stack )
+    default-alignment resize-align ;
+
+TYPED:: free ( s: stack ptr: alien -- )
+    { { [ ptr s within-bounds? not ] [ ] } ! can't free OOB
+      { [ ptr s double-free?       ] [ ] } ! allow double free
+      { [ t ]
+        ! read the header from memory
+        [ ptr dup read-header padding>> neg +-address s offset-from-base
+          s offset<< ] }
+    } cond ;
