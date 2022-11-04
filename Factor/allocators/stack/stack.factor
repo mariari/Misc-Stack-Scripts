@@ -67,7 +67,7 @@ PRIVATE>
 ! Core Logic
 ! ------------------------------------------------------------------------------
 
-:: calc-padding-wtih-header ( ptr align header-size -- padding )
+:: calc-padding-with-header ( ptr align header-size -- padding )
     align ptr padding-needed-2^-checked :> padding
     header-size padding <=
     [ padding ]
@@ -77,7 +77,7 @@ PRIVATE>
 
 TYPED:: alloc-align ( s: stack size: fixnum align: fixnum -- a: maybe{ alien } )
     ! we use 128 as the max alignment, as the header is a uint8_t
-    s current-address align 128 min header-size calc-padding-wtih-header :> padding
+    s current-address align 128 min header-size calc-padding-with-header :> padding
     ! check if we are out of memory
     s [ offset>> padding size + + ] [ buffer-length>> ] bi >
     [ f ]

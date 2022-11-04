@@ -1,6 +1,6 @@
 ! Copyright (C) 2022 mariari.
 ! See http://factorcode.org/license.txt for BSD license.
-USING: help.markup help.syntax kernel alien ;
+USING: help.markup help.syntax kernel alien allocators.stack.private ;
 IN: allocators.stack
 
 HELP: <header>
@@ -37,7 +37,7 @@ HELP: alloc-align
 }
 { $description "" } ;
 
-HELP: calc-padding-wtih-header
+HELP: calc-padding-with-header
 { $values
     { "ptr" object } { "align" object } { "header-size" object }
     { "padding" object }

@@ -4,9 +4,9 @@ USING: tools.test allocators.stack
        allocators.utilities accessors combinators math kernel ;
 IN: allocators.stack.tests
 
-{ 14 } [ 0x1236122 8  8 calc-padding-wtih-header ] unit-test
-{ 14 } [ 0x1236122 16 8 calc-padding-wtih-header ] unit-test
-{ 32 } [ 0x1236128 8 32 calc-padding-wtih-header ] unit-test
+{ 14 } [ 0x1236122 8  8 calc-padding-with-header ] unit-test
+{ 14 } [ 0x1236122 16 8 calc-padding-with-header ] unit-test
+{ 32 } [ 0x1236128 8 32 calc-padding-with-header ] unit-test
 
 { 64 }
 [ 1 M stack-malloc
