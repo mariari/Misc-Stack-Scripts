@@ -1,11 +1,9 @@
 ! Copyright (C) 2022 mariari.
 ! See http://factorcode.org/license.txt for BSD license.
-USING: kernel math namespaces alien.data unix.ffi alien typed libc ;
+USING: kernel math namespaces alien.data unix.ffi alien typed libc allocators.utilities ;
 IN: allocators.arena-global
 
 QUALIFIED-WITH: alien.c-types c
-
-: M ( size: c:ulonglong -- size: c:ulonglong ) 1048576 * ;
 
 ! Taken from
 ! https://www.gingerbill.org/article/2019/02/08/memory-allocation-strategies-002/
