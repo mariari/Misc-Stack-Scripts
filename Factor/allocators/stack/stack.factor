@@ -54,8 +54,11 @@ TYPED: read-header ( address: alien -- h: header )
 TYPED: double-free? ( ptr: alien s: stack -- free?: boolean )
     current-address [ alien-address ] bi@ >= ;
 
-PRIVATE>
+:: round-to-nearest ( v b -- v-divislbe-by-b )
+    v b mod sgn :> divisible?
+    b divisible? v b /i + * ;
 
+PRIVATE>
 ! ------------------------------------------------------------------------------
 ! Core Logic
 ! ------------------------------------------------------------------------------
@@ -64,12 +67,8 @@ PRIVATE>
     align ptr padding-needed-2^-checked :> padding
     header-size padding <=
     [ padding ]
-    ! how much after padding is gone is the size needed
-    [ header-size padding -         :> needed-space
-      ! if the needed-space is not divisible by the align,
-      ! then add 1 extra align of padding
-      needed-space align mod-2^ sgn :> extra-padding
-      padding align extra-padding needed-space align /i + * + ]
+    ! promote the header-size to the nearest alignment then add back the padding
+    [ header-size padding - align round-to-nearest padding + ]
     if ;
 
 TYPED:: alloc-align ( s: stack size: fixnum align: fixnum -- a: maybe{ alien } )
