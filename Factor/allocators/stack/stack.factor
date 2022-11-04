@@ -58,7 +58,11 @@ TYPED: double-free? ( ptr: alien s: stack -- free?: boolean )
     v b mod sgn :> divisible?
     b divisible? v b /i + * ;
 
+TYPED: address-before-allocation ( x: alien -- x: alien )
+    dup read-header padding>> neg +-address ;
+
 PRIVATE>
+
 ! ------------------------------------------------------------------------------
 ! Core Logic
 ! ------------------------------------------------------------------------------
@@ -87,15 +91,16 @@ TYPED:: alloc-align ( s: stack size: fixnum align: fixnum -- a: maybe{ alien } )
       next-addr [ 0 size memset ] keep ]
     if ;
 
-DEFER: free
+TYPED: unsafe-free ( s: stack ptr: alien -- )
+    address-before-allocation swap [ offset-from-base ] [ offset<< ] bi ;
 
 TYPED:: resize-align
     ( s: stack ptr: alien old-size: fixnum new-size: fixnum align: fixnum
       -- s: maybe{ alien } )
     { { [ ptr not        ]           [ f ] }
-      { [ new-size zero? ]           [ s ptr free f ] }
       { [ ptr s within-bounds? not ] [ f ] } ! Can't resize OOB
       { [ ptr s double-free?       ] [ f ] }
+      { [ new-size zero? ]           [ s ptr unsafe-free f ] }
       { [ old-size new-size =      ] [ ptr ] }
       { [ t ]
         [ s new-size align alloc-align dup [ ptr new-size memmove ] [ ] if ] }
@@ -118,11 +123,8 @@ TYPED: alloc ( s: stack size: fixnum -- a: maybe{ alien } )
 TYPED: resize ( a: stack ptr: alien old-size: fixnum new-size: fixnum -- stack )
     default-alignment resize-align ;
 
-TYPED:: free ( s: stack ptr: alien -- )
-    { { [ ptr s within-bounds? not ] [ ] } ! can't free OOB
-      { [ ptr s double-free?       ] [ ] } ! allow double free
-      { [ t ]
-        ! read the header from memory
-        [ ptr dup read-header padding>> neg +-address s offset-from-base
-          s offset<< ] }
+TYPED: free ( s: stack ptr: alien -- )
+    { { [ 2dup swap within-bounds? not ] [ 2drop ] } ! can't free OOB
+      { [ 2dup swap double-free?       ] [ 2drop ] } ! allow double free
+      { [ t                            ] [ unsafe-free ] }
     } cond ;

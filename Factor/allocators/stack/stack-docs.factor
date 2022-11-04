@@ -1,6 +1,6 @@
 ! Copyright (C) 2022 mariari.
 ! See http://factorcode.org/license.txt for BSD license.
-USING: help.markup help.syntax kernel ;
+USING: help.markup help.syntax kernel alien ;
 IN: allocators.stack
 
 HELP: <header>
@@ -16,6 +16,12 @@ HELP: <stack>
     { "s" object }
 }
 { $description "" } ;
+
+HELP: address-before-allocation
+{ $values
+    { "x" alien }
+}
+{ $description "address before the given allocation" } ;
 
 HELP: alloc
 { $values
@@ -83,6 +89,20 @@ HELP: read-header-directly
 }
 { $description "" } ;
 
+HELP: resize
+{ $values
+    { "a" object } { "ptr" object } { "old-size" object } { "new-size" object }
+    { "stack" object }
+}
+{ $description "" } ;
+
+HELP: resize-align
+{ $values
+    { "s" object } { "ptr" object } { "old-size" object } { "new-size" object } { "align" object }
+    { "s" object }
+}
+{ $description "" } ;
+
 HELP: stack
 { $class-description "" } ;
 
@@ -96,6 +116,12 @@ HELP: stack-malloc
 { $values
     { "size" object }
     { "stack" object }
+}
+{ $description "" } ;
+
+HELP: unsafe-free
+{ $values
+    { "s" object } { "ptr" object }
 }
 { $description "" } ;
 
