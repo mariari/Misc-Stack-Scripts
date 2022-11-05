@@ -87,3 +87,12 @@ TYPED: within-bounds? ( address: alien b: bounds -- b: boolean )
 
 TYPED: +-address ( a: alien f: fixnum -- a+f: alien )
     [ alien-address ] dip + <alien> ;
+
+! ------------------------------------------------------------------------------
+! Dealing With Alignment
+! ------------------------------------------------------------------------------
+
+! a generalization of align for b's that are not power of 2
+:: align-to-nearest ( v b -- n )
+    v b mod sgn :> divisible?
+    b divisible? v b /i + * ;

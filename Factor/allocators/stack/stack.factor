@@ -1,7 +1,7 @@
 ! Copyright (C) 2022 mariari.
 ! See http://factorcode.org/license.txt for BSD license.
-USING: typed kernel math namespaces accessors combinators allocators.utilities
-       math.order
+USING: allocators.utilities
+       math math.order namespaces accessors typed kernel combinators
        alien alien.data alien.syntax libc unix.ffi classes.struct alien.c-types ;
 IN: allocators.stack
 
@@ -54,10 +54,6 @@ TYPED: read-header ( address: alien -- h: header )
 TYPED: double-free? ( ptr: alien s: stack -- free?: boolean )
     current-address [ alien-address ] bi@ >= ;
 
-:: round-to-nearest ( v b -- v-divislbe-by-b )
-    v b mod sgn :> divisible?
-    b divisible? v b /i + * ;
-
 TYPED: address-before-allocation ( x: alien -- x: alien )
     dup read-header padding>> neg +-address ;
 
@@ -67,12 +63,12 @@ PRIVATE>
 ! Core Logic
 ! ------------------------------------------------------------------------------
 
-:: calc-padding-with-header ( ptr align header-size -- padding )
-    align ptr padding-needed-2^-checked :> padding
+:: calc-padding-with-header ( ptr algn header-size -- padding )
+    algn ptr padding-needed-2^-checked :> padding
     header-size padding <=
     [ padding ]
     ! promote the header-size to the nearest alignment then add back the padding
-    [ header-size padding - align round-to-nearest padding + ]
+    [ header-size padding - algn align padding + ]
     if ;
 
 TYPED:: alloc-align ( s: stack size: fixnum align: fixnum -- a: maybe{ alien } )
@@ -111,7 +107,7 @@ TYPED:: resize-align
 ! ------------------------------------------------------------------------------
 
 : stack-malloc ( size -- stack ) [ malloc ] keep <stack> ;
-: stack-free-malloc ( arena -- ) buffer>> libc:free ;
+: stack-free-malloc ( stack -- ) buffer>> libc:free ;
 
 ! ------------------------------------------------------------------------------
 ! Main API
@@ -128,3 +124,6 @@ TYPED: free ( s: stack ptr: alien -- )
       { [ 2dup swap double-free?       ] [ 2drop ] } ! allow double free
       { [ t                            ] [ unsafe-free ] }
     } cond ;
+
+TYPED: free-all ( s: stack -- )
+    0 swap offset<< ;

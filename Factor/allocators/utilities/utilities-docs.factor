@@ -32,7 +32,102 @@ HELP: 2^?
 }
 { $description "" } ;
 
+HELP: +-address
+{ $values
+    { "a" object } { "f" object }
+    { "a+f" object }
+}
+{ $description "" } ;
+
+HELP: G
+{ $values
+    { "number" object }
+    { "GBs" object }
+}
+{ $description "" } ;
+
+HELP: K
+{ $values
+    { "number" object }
+    { "KBs" object }
+}
+{ $description "" } ;
+
+HELP: M
+{ $values
+    { "number" object }
+    { "MBs" object }
+}
+{ $description "" } ;
+
+HELP: align-to-nearest
+{ $values
+    { "v" object } { "b" object }
+    { "n" "an " { $link integer } " multiple of v" }
+}
+{ $description "a generalization of " { $link align } } ;
+
+HELP: below-bounds?
+{ $values
+    { "address" object } { "bounds" object }
+    { "below?" object }
+}
+{ $description "" } ;
+
+HELP: bounds
+{ $class-description "" } ;
+
+HELP: memmove
+{ $values
+    { "dst" object } { "src" object } { "size" object }
+    { "void*" object }
+}
+{ $description "" } ;
+
+HELP: offset-from-base
+{ $values
+    { "address" object } { "bounds" object }
+    { "offset-from-base" object }
+}
+{ $description "" } ;
+
+HELP: padding-needed
+{ $values
+    { "align" object } { "address" object }
+    { "padding-needed" object }
+}
+{ $description "" } ;
+
+HELP: padding-needed-2^
+{ $values
+    { "align-pow-2" object } { "address" object }
+    { "padding-needed" object }
+}
+{ $description "" } ;
+
+HELP: padding-needed-2^-checked
+{ $values
+    { "align-pow-2" object } { "address" object }
+    { "padding-needed" object }
+}
+{ $description "" } ;
+
+HELP: past-bounds?
+{ $values
+    { "address" object } { "bounds" object }
+    { "past?" object }
+}
+{ $description "" } ;
+
+HELP: within-bounds?
+{ $values
+    { "address" object } { "b" object }
+    { "b" object }
+}
+{ $description "" } ;
+
 ARTICLE: "allocators.utilities" "allocators.utilities"
-{ $vocab-link "allocators.utilities" } ;
+{ $vocab-link "allocators.utilities" }
+;
 
 ABOUT: "allocators.utilities"
