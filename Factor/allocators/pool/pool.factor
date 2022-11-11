@@ -2,7 +2,7 @@
 ! See http://factorcode.org/license.txt for BSD license.
 USING: allocators.utilities
        math math.order namespaces accessors typed kernel combinators
-       ranges sequences
+       ranges sequences lists
        alien alien.data alien.syntax libc unix.ffi
        classes.struct alien.c-types ;
 IN: allocators.pool
@@ -16,6 +16,13 @@ IN: allocators.pool
 
 STRUCT: node
     { next node* } ;
+
+M: node car >c-ptr ;
+M: node cdr next>> ;
+
+M: f nil? drop t ;
+
+INSTANCE: node list
 
 TUPLE: pool
     { buffer        alien }
@@ -49,14 +56,15 @@ DEFER: pool-init
 TYPED: head-read ( p: pool -- n: maybe{ node } )
     head>> dup f = [ drop f ] [ node deref ] if ;
 
-: push-free-node ( pool node* -- )
-    [ [ head>> ] dip node deref next<< ] [ >>head drop ] 2bi ;
-
 : chunk-count ( pool -- count )
     [ buffer-length>> ] [ chunk-size>> ] bi /i ;
+
 ! ------------------------------------------------------------------------------
 ! Core Logic
 ! ------------------------------------------------------------------------------
+
+: push-free-node ( pool node* -- )
+    [ [ head>> ] dip node deref next<< ] [ >>head drop ] 2bi ;
 
 :: pool-init ( pool alignment -- )
     pool [ buffer>> ] [ buffer-orig<< ] bi
