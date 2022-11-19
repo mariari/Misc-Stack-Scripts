@@ -1,7 +1,12 @@
 ! Copyright (C) 2022 mariari.
 ! See http://factorcode.org/license.txt for BSD license.
-USING: tools.test allocators.pool kernel combinators
-       accessors alien.data allocators.pool math alien ;
+USING: tools.test allocators.pool kernel combinators classes.struct
+       accessors alien.data allocators.pool math alien misc.padding
+       allocators.utilities alien.c-types ;
+
+QUALIFIED-WITH: allocators.stack stack
+QUALIFIED-WITH: allocators.arena arena
+
 IN: allocators.pool.tests
 
 { f }
@@ -51,4 +56,18 @@ unit-test
      ! free the pool
      pool pool-free-malloc
      [ first-test second-test third-test fourth-test ] ]
+unit-test
+
+! mixing allocators
+{ S{ char-short f 0 0 } }
+[let 1 M 64 K pool-malloc            :> memory
+     memory alloc 64 K stack:<stack> :> stack
+     stack char-short [ heap-size stack:alloc ] [ deref ] bi 127 >>c 1024 >>s
+       :> my-char
+     memory stack buffer>> free
+     memory alloc drop
+     ! return the char
+     [ my-char clone ]
+     ! free the pool
+     memory pool-free-malloc ]
 unit-test

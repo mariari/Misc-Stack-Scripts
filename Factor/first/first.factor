@@ -17,7 +17,7 @@ MEMO: test ( a  -- bool ) 4 = ;
 
 : test-filter ( -- x x ) 3 { -12 10 16 0 -1 -3 -9 } [ copy-op < ] filter ;
 
-: test-filter' ( -- x x ) 3 { -12 10 16 0 -1 -3 -9 } [ swap dup  rot < ] filter ;
+: test-filter' ( -- x x ) 3 { -12 10 16 0 -1 -3 -9 } [ swap dup rot < ] filter ;
 
 
 <PRIVATE
@@ -28,6 +28,12 @@ MEMO: test ( a  -- bool ) 4 = ;
     ! For some reason compiled call's have to do this
     ! number operation number operation car -> number operation number car operation
     swap [ [ 2dup ] dip swap call( x x -- x ) ] filter swap drop swap ; inline
+
+! lets see what I've learned
+: sfilter-improved ( number list operation -- filtered number )
+    ! For some reason compiled call's have to do this
+    ! number operation number operation car -> number operation number car operation
+    swap [ [ 2dup ] dip swap call( x x -- x ) ] filter nip swap ; inline
 
 : on-car ( x quote  -- ? )
     [ car ] dip  call( x --  ? ) ;

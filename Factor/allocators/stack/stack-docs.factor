@@ -51,9 +51,6 @@ HELP: current-address
 }
 { $description "" } ;
 
-HELP: foo
-{ $description "" } ;
-
 HELP: free
 { $values
     { "s" object } { "ptr" object }

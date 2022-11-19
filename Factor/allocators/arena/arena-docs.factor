@@ -46,13 +46,6 @@ HELP: current-address
 }
 { $description "" } ;
 
-HELP: memmove
-{ $values
-    { "dst" object } { "src" object } { "size" object }
-    { "void*" object }
-}
-{ $description "" } ;
-
 HELP: resize
 { $values
     { "a" object } { "old-memory" object } { "old-size" object } { "new-size" object }
