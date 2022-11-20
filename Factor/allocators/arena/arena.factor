@@ -61,7 +61,7 @@ TYPED:: alloc-align ( arena: arena size: fixnum align: fixnum -- a: maybe{ alien
 
     new-ptr size +-address arena past-bounds?
     [ f ]
-    [ arena offset >>prev-offset offset size + >>curr-offset drop
+    [ offset arena [ prev-offset<< ] [ [ size + ] dip curr-offset<< ] 2bi
       new-ptr dup 0 size memset ]
     if ;
 
