@@ -5,3 +5,43 @@ years.
 - I like to symlink the Factor directory to "factor/work", so that
   scaffold creates the work for me. Further it prevents factor from
   failing half way through dumping an image.
+  + This is unnecessary if one uses the =.factor-roots= and calls
+    =scaffold-vocab= when creating a new vocabulary!
+** Interesting Projects
+- The most interesting programs are in the =Factor= sub-directory. And
+  not all of them are interesting.
+  + _Projects_
+    * allocators
+      - Contains code dealing with various memory allocation
+        strategies.
+      - Shows off how Factor deals with =alien= functions and how to
+        communicate between factor and c efficiently.
+    * misc/padding
+      - This one simply shows off padding in C structus easily via
+        Factor. Inspecting the values created in the repl is nice.
+    * tax
+      - This is just a little program I've been using that does tax
+        calculations for the Taiwanese tax system. I also use this to
+        calculate monthly expenses, probably only of interest to me.
+    * compiling-lisp/unary
+      - This is an unfinished project, however it was my first attempt
+        at using the =alien= function interface in =Factor=. With that
+        said, it does showcase =Factor='s assembler and marking
+        regions as executable
+  + _Unfinished and not of interest_
+    * finger-tree
+      - Currently this does nothing, but does showcase the =match= and
+        =VARIANT:= capabilities of factor
+    * queue
+      - More =VARIANT:=. Ι believe Ι was interested in implementing
+        purely functional data structures at this time.
+    * first
+      - This is my very first factor file and code. It is akin to
+        watching a child learn how to walk for the first time, however
+        the =quicksort= function is cool.
+      - In the future I'll create a =playground= similar to smalltalk
+        for my various throwaway code.
+    * michelson
+      - Ι wanted to make a faster michelson compliant code in
+        =Factor=, would be nicer than using the normal interpreter in
+        =OCaml=.
