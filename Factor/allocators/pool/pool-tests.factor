@@ -63,11 +63,11 @@ unit-test
 [let 1 M 64 K pool-malloc            :> memory
      memory alloc 64 K stack:<stack> :> stack
      stack char-short [ heap-size stack:alloc ] [ deref ] bi 127 >>c 1024 >>s
-       :> my-char
-     memory stack buffer>> free
-     memory alloc drop
-     ! return the char
-     [ my-char clone ]
+       :> my-short-char
+     ! free the memory regarding the stack, and rehand it out
+     memory [ stack buffer>> free ] [ alloc drop ] bi
+     ! return the memory, it should be zeored now
+     [ my-short-char clone ]
      ! free the pool
      memory pool-free-malloc ]
 unit-test
