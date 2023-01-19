@@ -4,6 +4,8 @@ USING: kernel math sequences math.order literals ;
 QUALIFIED-WITH: namespaces name
 IN: tax
 
+<<
+
 : percent ( taxes-paid income -- percent ) / ;
 
 ! a complicated way to say /
@@ -78,15 +80,17 @@ PRIVATE>
 : calculate-yearly ( monthly-value operation -- monthly-return )
     [ 12 * ] dip call( a -- a ) 12 / ;
 
+>>
+
 : food-budget ( -- amount-in-usd ) 2 15 30 * * ;
 
 : monthly-expenses  ( -- amount-in-usd )
     29 5 30 * * ntd-to-usd  ! Green tea/ drinks
-    2290 ntd-to-usd  +      ! hair dye and cut
-    1136 ntd-to-usd  +      ! internet
-    620  ntd-to-usd  +      ! cell
     ${ 2 30    *            ! train tickets
        food-budget          ! food
+       620  ntd-to-usd      ! cell
+       1136 ntd-to-usd      ! internet
+       2290 ntd-to-usd      ! hair dye and cut
        250                  ! private health insurance
        70                   ! electricity
     } [ + ] each ;
