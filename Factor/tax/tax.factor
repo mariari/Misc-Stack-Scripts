@@ -82,18 +82,26 @@ PRIVATE>
 
 >>
 
-: food-budget ( -- amount-in-usd ) 2 15 30 * * ;
+: drinks ( --  NTD ) 120 ;
 
-: monthly-expenses  ( -- amount-in-usd )
-    29 5 30 * * ntd-to-usd  ! Green tea/ drinks
-    ${ 2 30    *            ! train tickets
-       food-budget          ! food
-       620  ntd-to-usd      ! cell
-       1136 ntd-to-usd      ! internet
-       2290 ntd-to-usd      ! hair dye and cut
-       250                  ! private health insurance
-       70                   ! electricity
-    } [ + ] each ;
+: food ( -- amount-NTD ) 2 500 * ;
+
+: train-tickets ( -- NTD ) 50 ;
+
+: cell ( -- NTD ) 620 ;
+
+: internet ( -- NTD ) 1136 ;
+
+: haircut  ( -- NTD ) 570 ;
+
+: private-health-insurance ( -- NTD ) 250 usd-to-ntd ;
+
+: electricity ( -- NTD ) 1200 ;
+
+: monthly-expenses  ( -- amount-in-NTD )
+    0
+    ${ drinks train-tickets food }         [ + ] each 30 *
+    ${ cell internet haircut electricity } [ + ] each ;
 
 : calculate-expenses ( rent income-per-month -- left-each-month )
     [ dup
@@ -103,4 +111,4 @@ PRIVATE>
       tri
     ] calculate-yearly
     swap -                   ! rent
-    monthly-expenses - ;
+    monthly-expenses ntd-to-usd - ;
