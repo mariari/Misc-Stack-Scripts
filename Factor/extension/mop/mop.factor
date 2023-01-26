@@ -3,7 +3,8 @@
 USING: kernel sequences typed accessors
 syntax classes.tuple.parser arrays prettyprint
 parser grouping hashtables assocs vectors words strings classes lexer
-make quotations combinators math words.symbol namespaces ;
+make quotations combinators math words.symbol namespaces
+vocabs.parser lists continuations math.parser ;
 IN: extension.mop
 
 <<
@@ -15,6 +16,12 @@ IN: extension.mop
 ERROR: invalid-syntax word ;
 
 ERROR: redefinition word ;
+
+ERROR: improper-keyword-syntax word ;
+
+ERROR: improper-word-creation word ;
+
+ERROR: imporper-option-creation word ;
 
 ! ------------------------------------------------------------------
 ! Standard class
@@ -38,16 +45,13 @@ TYPED: class-direct-superclasses ( s: standard-class -- s: sequence )
 ! ------------------------------------------------------------------
 
 SYMBOL: initarg: inline
-
-SYMBOL: initform: inline
-
-SYMBOL: initfunction: inline
-
+SYMBOL: accessor: inline
 SYMBOL: reader: inline
-
 SYMBOL: writer: inline
 
-SYMBOL: accessor: inline
+
+SYMBOL: initform: inline
+SYMBOL: initfunction: inline
 
 SYMBOL: type: inline
 
@@ -56,6 +60,7 @@ SYMBOL: name: inline
 SYMBOL: metaclass: inline
 
 SYMBOL: default-initargs: inline
+SYMBOL: default-initarg: inline
 
 SYMBOL: table
 
@@ -70,15 +75,6 @@ table [ H{ } ] initialize
 
 : set-class ( class name -- )
     table get set-at ;
-
-! ------------------------------------------------------------------
-! Helpers for Canonicalize
-! ------------------------------------------------------------------
-
-TYPED: inline-names ( a: array -- seq ) [ rest ] [ first create-word-in ] bi prefix ;
-
-TYPED: setup-direct-slot ( spec: union{ array string } -- spec: union{ array word } )
-    dup class-of string = [ create-word-in ] [ inline-names ] if ;
 
 ! ------------------------------------------------------------------
 ! Canonicalize definitions
@@ -102,39 +98,91 @@ TYPED: canonicalize-direct-slot ( spec: union{ array word } -- s )
       ] reduce ]
     if ;
 
+: canonicalize-direct-slots ( spec -- slots-spec )
+    [ canonicalize-direct-slot ] map ;
+
 ! ------------------------------------------------------------------
 ! Parser words for DEFCLASS:
 ! ------------------------------------------------------------------
 
-: canonicalize-direct-slots ( spec -- slots-spec )
-    [ setup-direct-slot canonicalize-direct-slot ] map ;
+: intern-word ( string -- word )
+    dup search [ nip ] [ dup string>number [ drop ] [ create-word-in ] if* ] if* ;
+
+: end-check ( str -- str )
+    dup [ \ } "}" "{" "[" "]" "(" ")" ] member? [ improper-word-creation ] [ ] if ;
+
+: scan-intern-word ( -- word )      scan-token end-check intern-word ;
+: scan-slot-name   ( -- slot-name ) scan-intern-word ;
+: scan-keyword     ( -- keyword )   scan-word ;
+
+
+: new-definers-list ( -- definers )
+    { initarg: reader: writer: accessor: metaclass: } ;
+
+: parse-slot-options ( accumulator -- x )
+    scan-token
+    { { [ dup "}" = ] [ drop lreverse ] }
+      { [ search dup new-definers-list member? ]
+        [ swons scan-intern-word swons parse-slot-options ] }
+      { [ dup ]
+        [ swons scan-object swons parse-slot-options ] }
+      [ <no-word-error> throw-restarts ]
+    } cond ;
+
+: parse-slot ( -- spec )
+    [ scan-slot-name , nil parse-slot-options list>array % ] { } make ;
+
+: parse-slots ( end-delim string/f -- ? )
+    {
+        {
+            [ dup { ":" "(" "<" "\"" "!" } member? ]
+            [ invalid-slot-name ]
+        }
+        { [ 2dup = ] [ drop f ] }
+        [ dup "{" = [ drop parse-slot ] when , t ]
+    } cond nip ;
+
+: parse-slots-until ( end-delim -- )
+    dup scan-token parse-slots [ parse-slots-until ] [ drop ] if ;
+
+: parse-option  ( -- spec )
+    [ nil parse-slot-options list>array % ] { } make ;
+
+: parse-options ( end-delim string/f -- ? )
+    { { [ 2dup = ] [ drop f ] }
+      { [ dup "{" = ] [ nip parse-option , t ]  }
+      [ imporper-option-creation f ]
+    } cond nip ;
+
+! bad please refactor
+: parse-options-until ( end-delim -- )
+    dup scan-token parse-options [ parse-slots-until ] [ drop ] if ;
 
 : scan-slots ( -- slots )
     scan-token dup "{" = [ drop ] [ invalid-syntax ] if
-    [ "}" parse-tuple-slots-delim ] { } make ;
+    [ "}" parse-slots-until ] { } make ;
 
 : scan-options ( -- options )
-    [ parse-tuple-slots ] { } make ;
+    [ ";" parse-options-until ] { } make ;
 
 : (parse-class) ( -- name inheritance-list slots options )
     scan-new-word
     scan-object  canonicalize-direct-superclass
     scan-slots   canonicalize-direct-slots
-    scan-options [ setup-direct-slot ] map ;
+    scan-options  ;
 
 ! ------------------------------------------------------------------
 ! central class definition
 ! ------------------------------------------------------------------
 
+:: define-class ( name is slots -- )
+    name is slots { } { } { } { } standard-class boa name set-class ;
+
 :: ensure-class ( name is slots options -- )
-    ! define-symbol
     name dup find-class
-    [ drop ]
-    [ define-symbol
-      ! we ignore the options for now
-      name is slots { } { } { } { } standard-class boa name set-class
-    ]
-    if  ;
+    ! we ignore the options for now, and let redefines happen
+    [ define-symbol name is slots define-class ]
+    [ define-symbol name is slots define-class ] if ;
 
 SYNTAX: DEFCLASS:
     (parse-class) ensure-class ;
@@ -143,12 +191,29 @@ SYNTAX: DEFCLASS:
 
 DEFCLASS: test { } { } ;
 
-DEFCLASS: standard { test }
-   { name
+DEFCLASS: standard-test { test }
+   { { name }
      { direct-superclasses   type: sequence }
      { direct-slots          type: sequence }
      { class-precedence-list type: sequence }
      { effective-slots       type: sequence }
-     { direct-subclasses     initarg: { } }
-     { direct-methods        type: sequence initarg: { } initform: [ 2 3 + ] } }
-    { :metaclass standard-class } ;
+     { direct-methods        type: sequence initform: [ 2 3 + ] }
+     { direct-subclasses     initarg: initform: { } accessor: class-direct-subclasses } }
+   { metaclass: standard-class } { default-initarg: [ ] } ;
+
+DEFCLASS: standard-clas { }
+   { { name initarg:  name:
+            accessor: class-name }
+     { direct-superclasses initarg: direct-superclasses:
+                           accessor: class-direct-superclasses }
+     { direct-slots type: sequence
+                    accessor: class-slots }
+     { class-precedence-list type: sequence
+                             accessor: class-precedence-list }
+     { effective-slots type: sequence
+                       accessor: class-slots }
+     { direct-subclasses initarg: initform: { }
+                         accessor: class-direct-subclasses }
+     { direct-methods initarg: initform: { }
+                      accessor: class-direct-methods } }
+   { metaclass: standard-class } { default-initarg: [ ] } ;
