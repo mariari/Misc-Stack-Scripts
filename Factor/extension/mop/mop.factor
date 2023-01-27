@@ -1,10 +1,10 @@
 ! Copyright (C) 2023 mariari.
 ! See http://factorcode.org/license.txt for BSD license.
 USING: kernel sequences typed accessors
-syntax classes.tuple.parser arrays prettyprint
-parser grouping hashtables assocs vectors words strings classes lexer
-make quotations combinators math words.symbol namespaces
-vocabs.parser lists continuations math.parser sets ;
+       syntax classes.tuple.parser arrays prettyprint
+       parser grouping hashtables assocs vectors words strings classes lexer
+       make quotations combinators math words.symbol namespaces
+       vocabs.parser lists continuations math.parser sets literals ;
 IN: extension.mop
 
 <<
@@ -29,12 +29,16 @@ ERROR: imporper-option-creation word ;
 
 TUPLE: mop-standard-class
     { name }
-    { direct-superclasses   sequence }
-    { direct-slots          sequence }
-    { class-precedence-list sequence }
-    { effective-slots       sequence }
-    { direct-subclasses     hashtable initial: H{ } }
-    { direct-methods        sequence initial: V{ } } ;
+    { direct-superclasses   sequence initial: { } }
+    { direct-slots          sequence initial: { } }
+    { class-precedence-list sequence initial: { } }
+    { effective-slots       sequence initial: { } }
+    { direct-subclasses     hashtable }
+    { direct-methods        sequence initial: { } } ;
+
+! make sure the values are unique
+: new-mop-standard-class ( name -- mop )
+    { } { } { } { } H{ } clone V{ } mop-standard-class boa ;
 
 ! ------------------------------------------------------------------
 ! SYMBOL declarations
@@ -44,7 +48,6 @@ SYMBOL: initarg: inline
 SYMBOL: accessor: inline
 SYMBOL: reader: inline
 SYMBOL: writer: inline
-
 
 SYMBOL: initform: inline
 SYMBOL: initfunction: inline
@@ -62,7 +65,28 @@ SYMBOL: table
 
 SYMBOL: standard-object
 
-table [ H{ { standard-object T{ mop-standard-class { name  standard-object }  } } } ] initialize
+<PRIVATE
+
+: true-object-setup ( -- obj )
+    t new-mop-standard-class ;
+
+SYMBOL: true-object
+
+true-object [ true-object-setup ] initialize
+
+: standard-object-setup ( -- obj )
+    standard-object new-mop-standard-class true-object get 1array >>direct-superclasses ;
+
+SYMBOL: standard-object-object
+
+standard-object-object [ standard-object-setup ] initialize
+
+PRIVATE>
+
+table
+[ standard-object standard-object-object get 2array
+  t               true-object            get 2array
+  2array >hashtable ] initialize
 
 ! ------------------------------------------------------------------
 ! Top level hash table declaration
@@ -112,7 +136,6 @@ TYPED: canonicalize-direct-slot ( spec: union{ array word } -- s )
 : scan-intern-word ( -- word )      scan-token end-check intern-word ;
 : scan-slot-name   ( -- slot-name ) scan-intern-word ;
 : scan-keyword     ( -- keyword )   scan-word ;
-
 
 : new-definers-list ( -- definers )
     { initarg: reader: writer: accessor: metaclass: } ;
@@ -185,12 +208,14 @@ TYPED: initalize-readers ( c: mop-standard-class s: sequence -- )
 TYPED: finalize-inheritance ( c: mop-standard-class -- )
     drop ;
 
+: add-to-subclass ( class to-add -- )
+    dup name>> rot direct-subclasses>> set-at ;
+
 TYPED: initalize-superclasses ( c: mop-standard-class -- )
     [ [ default-superclasses ] when-empty ] change-direct-superclasses drop ;
 
 TYPED:: initialize-superclasses-to-have-subclass ( c: mop-standard-class -- )
-    c direct-superclasses>>
-    [ [ [ c dup name>> ] dip direct-subclasses>> set-at ] when* ] each ;
+    c direct-superclasses>> [ c add-to-subclass ] each ;
 
 TYPED: initialize-direct-slots ( c: mop-standard-class -- )
     [ [ make-direct-slot-definition ] map ] change-direct-slots drop ;
@@ -212,25 +237,24 @@ TYPED: initialize-standard-class ( c: mop-standard-class -- c: mop-standard-clas
 ! ------------------------------------------------------------------
 
 :: define-class ( name is slots -- )
-    name is slots { } { } H{ } V{ } mop-standard-class boa initialize-standard-class
-
+    name is slots { } { } H{ } clone V{ } mop-standard-class boa initialize-standard-class
     name set-class ;
 
 :: ensure-class ( name is slots options -- )
     name dup find-class
     ! we ignore the options for now, and let redefines happen
-    [ define-symbol name is slots define-class ]
-    [ define-symbol name is slots define-class ] if ;
+    [ define-symbol name is slots define-class ] dup if ;
 
 SYNTAX: DEFCLASS:
     (parse-class) ensure-class ;
 
 >>
 
+standard-object-object get initialize-standard-class drop
 
-DEFCLASS: test { standard-object } { } ;
+DEFCLASS: test-class { standard-object } { } ;
 
-DEFCLASS: standard-test { test }
+DEFCLASS: standard-test { test-class }
    { { name }
      { direct-superclasses   type: sequence }
      { direct-slots          type: sequence }
