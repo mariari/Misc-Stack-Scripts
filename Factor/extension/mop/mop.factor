@@ -4,7 +4,7 @@ USING: kernel sequences typed accessors
 syntax classes.tuple.parser arrays prettyprint
 parser grouping hashtables assocs vectors words strings classes lexer
 make quotations combinators math words.symbol namespaces
-vocabs.parser lists continuations math.parser ;
+vocabs.parser lists continuations math.parser sets ;
 IN: extension.mop
 
 <<
@@ -27,18 +27,14 @@ ERROR: imporper-option-creation word ;
 ! Standard class
 ! ------------------------------------------------------------------
 
-TUPLE: standard-class
+TUPLE: mop-standard-class
     { name }
     { direct-superclasses   sequence }
     { direct-slots          sequence }
     { class-precedence-list sequence }
     { effective-slots       sequence }
-    { direct-subclasses     sequence initial: { } }
-    { direct-methods        sequence initial: { } } ;
-
-
-TYPED: class-direct-superclasses ( s: standard-class -- s: sequence )
-    direct-subclasses>> ;
+    { direct-subclasses     hashtable initial: H{ } }
+    { direct-methods        sequence initial: V{ } } ;
 
 ! ------------------------------------------------------------------
 ! SYMBOL declarations
@@ -64,7 +60,9 @@ SYMBOL: default-initarg: inline
 
 SYMBOL: table
 
-table [ H{ } ] initialize
+SYMBOL: standard-object
+
+table [ H{ { standard-object T{ mop-standard-class { name  standard-object }  } } } ] initialize
 
 ! ------------------------------------------------------------------
 ! Top level hash table declaration
@@ -133,13 +131,11 @@ TYPED: canonicalize-direct-slot ( spec: union{ array word } -- s )
     [ scan-slot-name , nil parse-slot-options list>array % ] { } make ;
 
 : parse-slots ( end-delim string/f -- ? )
-    {
-        {
-            [ dup { ":" "(" "<" "\"" "!" } member? ]
-            [ invalid-slot-name ]
-        }
-        { [ 2dup = ] [ drop f ] }
-        [ dup "{" = [ drop parse-slot ] when , t ]
+    { { [ dup { ":" "(" "<" "\"" "!" } member? ]
+        [ invalid-slot-name ] }
+      { [ 2dup = ]
+        [ drop f ] }
+      [ dup "{" = [ drop parse-slot ] when , t ]
     } cond nip ;
 
 : parse-slots-until ( end-delim -- )
@@ -149,7 +145,7 @@ TYPED: canonicalize-direct-slot ( spec: union{ array word } -- s )
     [ nil parse-slot-options list>array % ] { } make ;
 
 : parse-options ( end-delim string/f -- ? )
-    { { [ 2dup = ] [ drop f ] }
+    { { [ 2dup = ]    [ drop f ] }
       { [ dup "{" = ] [ nip parse-option , t ]  }
       [ imporper-option-creation f ]
     } cond nip ;
@@ -166,17 +162,59 @@ TYPED: canonicalize-direct-slot ( spec: union{ array word } -- s )
     [ ";" parse-options-until ] { } make ;
 
 : (parse-class) ( -- name inheritance-list slots options )
-    scan-new-word
-    scan-object  canonicalize-direct-superclass
-    scan-slots   canonicalize-direct-slots
-    scan-options  ;
+    scan-intern-word
+    scan-object canonicalize-direct-superclass
+    scan-slots  canonicalize-direct-slots
+    scan-options ;
+
+! ------------------------------------------------------------------
+! Class final initalization
+! ------------------------------------------------------------------
+
+TYPED: default-superclasses ( -- a: array )
+   standard-object find-class 1array ;
+
+TYPED: make-direct-slot-definition ( h: hashtable -- h: hashtable ) ;
+
+TYPED: initalize-writers ( c: mop-standard-class s: sequence -- )
+    2drop ;
+
+TYPED: initalize-readers ( c: mop-standard-class s: sequence -- )
+    2drop ;
+
+TYPED: finalize-inheritance ( c: mop-standard-class -- )
+    drop ;
+
+TYPED: initalize-superclasses ( c: mop-standard-class -- )
+    [ [ default-superclasses ] when-empty ] change-direct-superclasses drop ;
+
+TYPED:: initialize-superclasses-to-have-subclass ( c: mop-standard-class -- )
+    c direct-superclasses>>
+    [ [ [ c dup name>> ] dip direct-subclasses>> set-at ] when* ] each ;
+
+TYPED: initialize-direct-slots ( c: mop-standard-class -- )
+    [ [ make-direct-slot-definition ] map ] change-direct-slots drop ;
+
+TYPED: initalize-slot-mehthods ( c: mop-standard-class -- )
+    dup direct-slots>> [ initalize-writers ] [ initalize-readers ] 2bi ;
+
+TYPED: initialize-standard-class ( c: mop-standard-class -- c: mop-standard-class )
+    dup
+    { [ initalize-superclasses ]
+      [ initialize-superclasses-to-have-subclass ]
+      [ initialize-direct-slots ]
+      [ initalize-slot-mehthods ]
+      [ finalize-inheritance ]
+    } cleave ;
 
 ! ------------------------------------------------------------------
 ! central class definition
 ! ------------------------------------------------------------------
 
 :: define-class ( name is slots -- )
-    name is slots { } { } { } { } standard-class boa name set-class ;
+    name is slots { } { } H{ } V{ } mop-standard-class boa initialize-standard-class
+
+    name set-class ;
 
 :: ensure-class ( name is slots options -- )
     name dup find-class
@@ -189,7 +227,8 @@ SYNTAX: DEFCLASS:
 
 >>
 
-DEFCLASS: test { } { } ;
+
+DEFCLASS: test { standard-object } { } ;
 
 DEFCLASS: standard-test { test }
    { { name }
@@ -199,9 +238,9 @@ DEFCLASS: standard-test { test }
      { effective-slots       type: sequence }
      { direct-methods        type: sequence initform: [ 2 3 + ] }
      { direct-subclasses     initarg: initform: { } accessor: class-direct-subclasses } }
-   { metaclass: standard-class } { default-initarg: [ ] } ;
+   { default-initarg: [ ] } ;
 
-DEFCLASS: standard-clas { }
+DEFCLASS: standard-class { }
    { { name initarg:  name:
             accessor: class-name }
      { direct-superclasses initarg: direct-superclasses:
@@ -216,4 +255,5 @@ DEFCLASS: standard-clas { }
                          accessor: class-direct-subclasses }
      { direct-methods initarg: initform: { }
                       accessor: class-direct-methods } }
-   { metaclass: standard-class } { default-initarg: [ ] } ;
+   { metaclass: standard-class }
+   { default-initarg: [ ] } ;
