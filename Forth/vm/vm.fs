@@ -87,22 +87,12 @@ end-struct stack%
 
 
 \ increment the data inside by amnt
-: incf ( a-addr n -- )
-  swap +! ;
+: incf ( a-addr n -- ) swap +! ;
 
-\ Increment data inside of a pointer by 1
-: 1+! ( addr -- )
-  1 incf ;
-
-\ Increment data inside of a pointer by 1 cell
-: cell+! ( addr -- )
-  cell incf ;
-
-: cell-! ( addr -- )
-  -1 cells incf ;
-
-: -1+! ( addr -- )
-  -1 incf ;
+: 1+! ( addr -- ) 1 incf ;
+: -1+! ( addr -- ) -1 incf ;
+: cell+! ( addr -- ) cell incf ;
+: cell-! ( addr -- ) -1 cells incf ;
 
 \ ------------------------
 \   Stack Data Structure
@@ -132,20 +122,13 @@ end-struct stack%
   old-top ;
 
 \ I'm a helper for push! to add the data
-: push-data! ( data stack -- stack )
-  tuck @ ! ;
+: push-data! ( data stack -- stack ) tuck @ ! ;
 
-: push! ( data stack -- )
-  stack-top push-data! cell+! ;
+: push!  ( data stack -- ) stack-top push-data! cell+! ;
+: cpush! ( data stack -- ) stack-top push-data! 1+! ;
 
-: cpush! ( data stack -- )
-  stack-top push-data! 1+! ;
-
-: pop! ( stack -- data )
-  stack-top dup cell-! @ @ ;
-
-: cpop! ( stack -- data )
-  stack-top dup -1+! @ @ ;
+: pop!  ( stack -- data ) stack-top dup cell-! @ @ ;
+: cpop! ( stack -- data ) stack-top dup -1+! @ @ ;
 
 
 : stack-dump ( -- ) ;
@@ -241,9 +224,7 @@ end-struct stack%
 
 \ fake example
 
-CREATE EXAMPLE VM-LITERAL C, 255 ,
-               VM-LITERAL C, 355 ,
-               VM-DIE     C,
+CREATE EXAMPLE VM-LITERAL C, 255 , VM-LITERAL C, 355 , VM-DIE C,
 
 : example-with-stirng { vec -- address }
   Here VM-LITERAL C, 255                  fixnum ,
@@ -257,8 +238,7 @@ CREATE EXAMPLE VM-LITERAL C, 255 ,
 : fake-startup ( -- )
   1024       stack-new PARAMETER !
   1024 cells stack-new VECTOR !
-  \ fake example program
-  VECTOR @ example-with-stirng IP ! ;
+  VECTOR @ example-with-stirng IP ! ; \ setup the fake example program
 
 \ turn this into a load file and interpreter later when we support more
 : entry ( -- )
