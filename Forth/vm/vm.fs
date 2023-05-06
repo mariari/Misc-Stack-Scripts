@@ -115,8 +115,8 @@ end-struct stack%
   stack-array @ 15 hex u.l decimal
   stack-top   @ 15 hex u.l decimal ;
 
-\ reserves u space in the stack, returning the original address
-: stack-reserve { u stack -- u2 }
+\ reserves u space in the stack, returning the original address u2
+: reserve-stack-space { u stack -- u2 }
   stack stack-top @ { old-top }
   u old-top + aligned stack stack-top !
   old-top ;
@@ -143,14 +143,6 @@ end-struct stack%
 
 : fixnum ( number -- tagged-number ) 1 lshift ;
 
-: copy-char ( addr-from addr-to -- )
-  swap c@ swap c! ;
-
-: copy-string ( addr-from size addr-to -- )
-  swap 0 ?DO
-    over i + over i + copy-char
-  LOOP 2drop ;
-
 \ places a string header at the top of the stack
 : place-string-header { length stack -- }
   stack stack-top @ { top }
@@ -159,11 +151,11 @@ end-struct stack%
   length    top object-size ! ;
 
 \ Places a string at the top of the stack
-: place-string ( string-addr length VECTOR -- )
-  over swap stack-reserve copy-string ;
+: place-string ( c-from u vec-pool -- )
+  over swap reserve-stack-space swap cmove ;
 
 \ we just take a forth string and put it into our model
-: string ( string-addr length vec -- loc )
+: string ( c-addr u pool -- loc )
   dup top-pointer >r
   2dup place-string-header place-string
   r> ;
@@ -175,7 +167,7 @@ end-struct stack%
 \ We've already checked the first byte is 0.
 \ Now simply read the next word, and push it on the stack
 : run-literal ( PARAMETER IP -- )
-  1 over +! 1 cells swap +!@ @ swap push! ;
+  dup 1+! cell swap +!@ @ swap push! ;
 
 \ dumps the given literal to stdout
 : emit-literal ( PARAMETER IP -- )
