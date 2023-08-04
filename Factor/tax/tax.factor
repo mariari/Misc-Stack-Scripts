@@ -6,13 +6,6 @@ IN: tax
 
 <<
 
-: percent ( taxes-paid income -- percent ) / ;
-
-! a complicated way to say /
-! [ swap - ] keep / 1 swap - ;
-
-: simple ( tax income -- final ) * ;
-
 ! ------------------------------------------------------------------
 ! Conversion rate is stored as a global variable as it is simpler to
 ! reason about when it is fixed, yet moldable
@@ -25,14 +18,9 @@ conversion [ 0.03329 ] name:initialize
 : conversion-rate ( -- rate )
     conversion name:get-global ;
 
-: set-ntd-to-usd ( new-rate -- )
-    conversion name:set-global ;
-
-: usd-to-ntd ( money -- money )
-    conversion-rate / ;
-
-: ntd-to-usd ( money -- money )
-    conversion-rate * ;
+: set-ntd-to-usd  ( new-rate -- ) conversion name:set-global ;
+: usd-to-ntd      ( USD -- NTD )  conversion-rate / ;
+: ntd-to-usd      ( NTD -- USD )  conversion-rate * ;
 
 <PRIVATE
 
@@ -63,47 +51,40 @@ conversion [ 0.03329 ] name:initialize
 
 PRIVATE>
 
-: taxes-ntd ( income-ntd -- taxes-paid )
-    taiwan-table-gold [ dupd owe ] map-sum nip ;
+: taxes-ntd   ( ntd -- paid ) taiwan-table-gold [ dupd owe ] map-sum nip ;
+: taxes       ( usd -- paid ) [ taxes-ntd ] with-usd-to-ntd ;
+: after-taxes ( usd -- left ) [ taxes ] keep swap - ;
 
-: taxes ( income-usd -- taxes-paid-usd )
-    [ taxes-ntd ] with-usd-to-ntd ;
-
-: income-after-taxes ( income -- left )
-    [ taxes ] keep swap - ;
-
-: health-care ( income -- cost )
-    0.0517 * ;
+: health-care ( income -- cost ) 0.0517 * ;
 
 : savings ( income -- cost ) 0.10 * ;
 
-: calculate-yearly ( monthly-value operation -- monthly-return )
+: yearly ( monthly-value operation -- monthly-return )
     [ 12 * ] dip call( a -- a ) 12 / ;
 
 >>
 
-: drinks ( --  NTD ) 120 ;
+: metro       ( -- NTD ) 50 ;
+: drinks      ( -- NTD ) 120 ;
+: food        ( -- NTD ) 500 2 * ;
 
-: food ( -- amount-NTD ) 2 500 * ;
-
-: train-tickets ( -- NTD ) 50 ;
-
-: cell ( -- NTD ) 650 ;
-
-: internet ( -- NTD ) 1136 ;
-
-: haircut  ( -- NTD ) 570 ;
+: cell        ( -- NTD ) 650 ;
+: internet    ( -- NTD ) 1136 ;
+: haircut     ( -- NTD ) 570 ;
+: electricity ( -- NTD ) 1200 ;
 
 : private-health-insurance ( -- NTD ) 250 usd-to-ntd ;
 
-: electricity ( -- NTD ) 1200 ;
+: daily   ( -- NTD ) 0 ${ drinks food metro } [ + ] each ;
+: monthly ( -- NTD ) 0 ${ cell internet haircut electricity } [ + ] each ;
 
-: monthly-expenses  ( -- amount-in-NTD )
-    0
-    ${ drinks food train-tickets }         [ + ] each 30 *
-    ${ cell internet haircut electricity } [ + ] each ;
+: static-expenses  ( -- NTD )
+    daily 30 * monthly + ;
+: dynamic-expenses ( income -- USD )
+    [ [ taxes ] [ savings + ] [ health-care + ] tri ] yearly ;
 
-: calculate-expenses ( rent income-per-month -- left-each-month )
-    [ dup [ taxes - ] [ savings - ] [ health-care - ] tri ] calculate-yearly
-    swap                        - ! rent
-    monthly-expenses ntd-to-usd - ;
+: expenses ( rent monthly-usd -- expenses )
+    dynamic-expenses + static-expenses ntd-to-usd + ;
+
+: after-expenses ( rent income-per-month -- left )
+    [ expenses ] keep swap - ;
