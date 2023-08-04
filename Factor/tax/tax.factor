@@ -55,27 +55,27 @@ conversion [ 0.03329 ] name:initialize
 
 : bracket-range ( sequence -- n ) first2 swap - ;
 
-: tax-paid-in-bracket ( salary table -- untaxed-salary-left tax )
-    [ bracket-range [-] ]                  ! setup salary left
-    [ [ bracket-range min ] keep third * ] ! setup tax information
-    2bi ;
+: owe ( salary bracket -- x )
+    [ first [-] ] [ bracket-range min ] [ third * ] tri ;
 
 : with-usd-to-ntd ( money op -- money )
     [ usd-to-ntd ] dip call( a -- a ) ntd-to-usd ;
 
 PRIVATE>
 
-: taxes-owed-ntd ( income-ntd -- taxes-paid )
-    taiwan-table-gold [ tax-paid-in-bracket ] map-sum nip ;
+: taxes-ntd ( income-ntd -- taxes-paid )
+    taiwan-table-gold [ dupd owe ] map-sum nip ;
 
-: taxes-owed ( income-usd -- taxes-paid-usd )
-    [ taxes-owed-ntd ] with-usd-to-ntd ;
+: taxes ( income-usd -- taxes-paid-usd )
+    [ taxes-ntd ] with-usd-to-ntd ;
 
 : income-after-taxes ( income -- left )
-    [ taxes-owed ] keep swap - ;
+    [ taxes ] keep swap - ;
 
 : health-care ( income -- cost )
     0.0517 * ;
+
+: savings ( income -- cost ) 0.10 * ;
 
 : calculate-yearly ( monthly-value operation -- monthly-return )
     [ 12 * ] dip call( a -- a ) 12 / ;
@@ -88,7 +88,7 @@ PRIVATE>
 
 : train-tickets ( -- NTD ) 50 ;
 
-: cell ( -- NTD ) 620 ;
+: cell ( -- NTD ) 650 ;
 
 : internet ( -- NTD ) 1136 ;
 
@@ -100,15 +100,10 @@ PRIVATE>
 
 : monthly-expenses  ( -- amount-in-NTD )
     0
-    ${ drinks train-tickets food }         [ + ] each 30 *
+    ${ drinks food train-tickets }         [ + ] each 30 *
     ${ cell internet haircut electricity } [ + ] each ;
 
 : calculate-expenses ( rent income-per-month -- left-each-month )
-    [ dup
-      [ taxes-owed - ]       ! taxes
-      [ 0.10  * - ]          ! savings
-      [ health-care - ]      ! public healthcare costs
-      tri
-    ] calculate-yearly
-    swap -                   ! rent
+    [ dup [ taxes - ] [ savings - ] [ health-care - ] tri ] calculate-yearly
+    swap                        - ! rent
     monthly-expenses ntd-to-usd - ;
