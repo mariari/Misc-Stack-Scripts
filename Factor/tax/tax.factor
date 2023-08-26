@@ -132,12 +132,9 @@ PRIVATE>
 : daily   ( -- NTD ) 0 ${ drinks food metro } [ C+ ] each ;
 : monthly ( -- NTD ) 0 ${ cell internet haircut electricity } [ C+ ] each ;
 
-: dynamic-expenses ( monthly -- $ )
-    [ [ savings ] [ taxes C+ ] [ health-care C+ ] tri ] yearly ;
-: static-expenses ( -- $ )
-    daily 30 C* monthly C+ ;
-: expenses ( rent monthly -- $ )
-    dynamic-expenses C+ static-expenses C+ ;
+: dynamic  ( monthly -- $ ) [ [ savings ] [ taxes C+ ] bi ] yearly ;
+: static   ( -- $ )              daily 30 C* monthly C+ ;
+: expenses ( rent monthly -- $ ) dynamic C+ static C+ ;
 
 : after-expenses ( rent monthly -- left )
     [ expenses ] keep swap C- ;
