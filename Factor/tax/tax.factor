@@ -1,26 +1,82 @@
 ! Copyright (C) 2021 .
 ! See http://factorcode.org/license.txt for BSD license.
-USING: kernel math sequences math.order literals ;
+USING: kernel math sequences math.order
+literals prettyprint.custom accessors classes combinators ;
 QUALIFIED-WITH: namespaces name
 IN: tax
 
 <<
 
+! Currency declarations
+TUPLE: taiwan  { amount number } ;
+TUPLE: america { amount number } ;
+
+! Generic Currency Conversion Words
+GENERIC#: denominate 1 ( amount denomination -- dnominated-amount )
+GENERIC: conversion ( currency -- rate )
+
+: set-denom ( u curr -- denom ) new swap >>amount ;
+: >base     ( denom -- base )   [ conversion ] [ amount>> ] bi * ;
+: from-base ( u curr -- denom ) [ name:get / ] [ set-denom ] bi ;
+
+M: number denominate set-denom ;
+M: tuple  denominate
+    swap 2dup class-of = [ nip ] [ >base swap from-base ] if ;
+
+! Creating Currencies
+: NTD ( u -- u ) taiwan denominate ;
+: TWD ( u -- u ) NTD ;
+: 元 ( u -- u ) NTD ;
+: 萬 ( u -- u ) 元 [ 10,000 * ] change-amount ;
+
+: USD ( u -- u ) america denominate ;
+
+<PRIVATE
+
+! Operating Generic Math
+:: apply ( x y fn -- z )
+    x clone [ y fn call( x y -- z ) ] change-amount ;
+:: apply-op ( x y fn -- z )
+    y clone [ x swap fn call( x y -- z ) ] change-amount ;
+
+:: op-both ( x y fn -- z )
+    { { [ x y [ tuple? ] both? x y [ class-of ] same? and ]
+        [ x y amount>> fn apply ] }
+      { [ x y [ tuple? ] both? ] [ x y x class-of denominate fn op-both ] }
+      { [ x tuple? ] [ x y fn apply ] }
+      { [ y tuple? ] [ x y fn apply-op ] }
+      [ x y fn call( x y -- z ) ]
+    } cond ;
+
+:: op-one ( x y fn -- z )
+    x tuple? y tuple? and
+    [ "Can't apply operation on 2 currencies" throw ] [ x y fn op-both ] if ;
+
+: pprint-NTD ( amount -- )
+    10,000.0 2dup >=
+    [ / pprint* \ 萬 pprint* ] [ drop pprint* \ 元 pprint* ] if ;
+
+PRIVATE>
+
+: C+ ( x y -- z ) [ + ] op-both ;
+: C- ( x y -- z ) [ - ] op-both ;
+: C* ( x y -- z ) [ * ] op-one ;
+: C/ ( x y -- z ) [ / ] op-one ;
+
+M: taiwan  pprint* amount>> pprint-NTD ;
+M: america pprint* amount>> pprint* \ USD pprint* ;
+
 ! ------------------------------------------------------------------
-! Conversion rate is stored as a global variable as it is simpler to
-! reason about when it is fixed, yet moldable
+! Conversion rate is stored as a global on the class symbol
 ! ------------------------------------------------------------------
 
-SYMBOL: conversion
+taiwan  [ 0.03329 ] name:initialize
+america [ 1       ] name:initialize
 
-conversion [ 0.03329 ] name:initialize
+: set-ntd ( new-rate -- ) taiwan name:set-global ;
 
-: conversion-rate ( -- rate )
-    conversion name:get-global ;
-
-: set-ntd-to-usd  ( new-rate -- ) conversion name:set-global ;
-: usd-to-ntd      ( USD -- NTD )  conversion-rate / ;
-: ntd-to-usd      ( NTD -- USD )  conversion-rate * ;
+M: taiwan  conversion drop taiwan name:get-global ;
+M: america conversion drop 1 ;
 
 <PRIVATE
 
@@ -46,45 +102,42 @@ conversion [ 0.03329 ] name:initialize
 : owe ( salary bracket -- x )
     [ first [-] ] [ bracket-range min ] [ third * ] tri ;
 
-: with-usd-to-ntd ( money op -- money )
-    [ usd-to-ntd ] dip call( a -- a ) ntd-to-usd ;
-
 PRIVATE>
 
-: taxes-ntd   ( ntd -- paid ) taiwan-table-gold [ dupd owe ] map-sum nip ;
-: taxes       ( usd -- paid ) [ taxes-ntd ] with-usd-to-ntd ;
+: taxes ( ntd -- paid )
+    元 amount>> taiwan-table [ dupd owe ] map-sum nip 元 ;
+
 : after-taxes ( usd -- left ) [ taxes ] keep swap - ;
 
-: health-care ( income -- cost ) 0.0517 * ;
+: health-care ( income -- cost ) 0.0517 C* ; ! unconfirmed
 
-: savings ( income -- cost ) 0.10 * ;
+: savings ( income -- cost ) 0.10 C* ;
 
 : yearly ( monthly-value operation -- monthly-return )
-    [ 12 * ] dip call( a -- a ) 12 / ;
+    [ 12 C* ] dip call( a -- a ) 12 C/ ;
 
 >>
 
-: metro       ( -- NTD ) 50 ;
-: drinks      ( -- NTD ) 120 ;
-: food        ( -- NTD ) 500 2 * ;
+: metro       ( -- NTD ) 50 元 ;
+: drinks      ( -- NTD ) 120 元 ;
+: food        ( -- NTD ) 500 元 2 C* ;
 
-: cell        ( -- NTD ) 650 ;
-: internet    ( -- NTD ) 1136 ;
-: haircut     ( -- NTD ) 570 ;
-: electricity ( -- NTD ) 1200 ;
+: cell        ( -- NTD ) 650  元 ;
+: internet    ( -- NTD ) 1136 元 ;
+: haircut     ( -- NTD ) 570  元 ;
+: electricity ( -- NTD ) 1200 元 ;
 
-: private-health-insurance ( -- NTD ) 250 usd-to-ntd ;
+: private-health-insurance ( -- NTD ) 250 USD ;
 
-: daily   ( -- NTD ) 0 ${ drinks food metro } [ + ] each ;
-: monthly ( -- NTD ) 0 ${ cell internet haircut electricity } [ + ] each ;
+: daily   ( -- NTD ) 0 ${ drinks food metro } [ C+ ] each ;
+: monthly ( -- NTD ) 0 ${ cell internet haircut electricity } [ C+ ] each ;
 
-: static-expenses  ( -- NTD )
-    daily 30 * monthly + ;
-: dynamic-expenses ( income -- USD )
-    [ [ taxes ] [ savings + ] [ health-care + ] tri ] yearly ;
+: dynamic-expenses ( monthly -- $ )
+    [ [ savings ] [ taxes C+ ] [ health-care C+ ] tri ] yearly ;
+: static-expenses ( -- $ )
+    daily 30 C* monthly C+ ;
+: expenses ( rent monthly -- $ )
+    dynamic-expenses C+ static-expenses C+ ;
 
-: expenses ( rent monthly-usd -- expenses )
-    dynamic-expenses + static-expenses ntd-to-usd + ;
-
-: after-expenses ( rent income-per-month -- left )
-    [ expenses ] keep swap - ;
+: after-expenses ( rent monthly -- left )
+    [ expenses ] keep swap C- ;
