@@ -10,6 +10,7 @@ IN: tax
 ! Currency declarations
 TUPLE: taiwan  { amount number } ;
 TUPLE: america { amount number } ;
+TUPLE: francs  { amount number } ;
 
 ! Generic Currency Conversion Words
 GENERIC#: denominate 1 ( amount denomination -- dnominated-amount )
@@ -26,10 +27,12 @@ M: tuple  denominate
 ! Creating Currencies
 : NTD ( u -- u ) taiwan denominate ;
 : TWD ( u -- u ) NTD ;
-: 元 ( u -- u ) NTD ;
+: 元 ( u -- u ) taiwan denominate ;
 : 萬 ( u -- u ) 元 [ 10,000 * ] change-amount ;
 
 : USD ( u -- u ) america denominate ;
+
+: CHF ( u -- u ) francs denominate ;
 
 <PRIVATE
 
@@ -65,6 +68,7 @@ PRIVATE>
 
 M: taiwan  pprint* amount>> pprint-NTD ;
 M: america pprint* amount>> pprint* \ USD pprint* ;
+M: francs pprint* amount>> pprint* \ CHF pprint* ;
 
 ! ------------------------------------------------------------------
 ! Conversion rate is stored as a global on the class symbol
@@ -72,11 +76,13 @@ M: america pprint* amount>> pprint* \ USD pprint* ;
 
 taiwan  [ 0.03329 ] name:initialize
 america [ 1       ] name:initialize
+francs  [ 1.15    ] name:initialize
 
 : set-ntd ( new-rate -- ) taiwan name:set-global ;
 
 M: taiwan  conversion drop taiwan name:get-global ;
 M: america conversion drop 1 ;
+M: francs  conversion drop francs name:get-global ;
 
 <PRIVATE
 
@@ -106,6 +112,9 @@ PRIVATE>
 
 : taxes ( ntd -- paid )
     元 amount>> taiwan-table [ dupd owe ] map-sum nip 元 ;
+
+: taxes-gold ( ntd -- paid )
+    元 amount>> taiwan-table-gold [ dupd owe ] map-sum nip 元 ;
 
 : after-taxes ( usd -- left ) [ taxes ] keep swap - ;
 
