@@ -15,9 +15,9 @@ create list2 allot
   +LOOP ;
 
 : list-count ( u arr n - u )
-  cells bounds 0 -rot do
-    over i @ = if 1+ then cell
-  +LOOP nip ;
+  0 -rot cell array>mem mem-do
+    over i @ = if 1+ then
+  LOOP nip ;
 
 : part1 ( -- u )
   0 input-length cells 0 ?do
